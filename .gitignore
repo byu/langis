@@ -1,0 +1,6 @@
+.yardoc
+coverage
+doc
+pkg
+spec_test_redis_db.rdb
+vendor/bundler_gems
