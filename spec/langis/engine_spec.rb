@@ -140,11 +140,11 @@ describe 'EventMachineEngine' do
     engine.pump my_message, :intake_1
   end
 
-  it 'should set the mtype field if the message can return an mtype' do
+  it 'should set the MESSAGE_TYPE field if the message responds to :message_type' do
     my_type = 'MyMessageType'
     my_message = mock 'message'
-    my_message.should_receive(:respond_to?).with(:mtype).once.and_return true
-    my_message.should_receive(:mtype).once.and_return(my_type)
+    my_message.should_receive(:respond_to?).with(:message_type).once.and_return true
+    my_message.should_receive(:message_type).once.and_return(my_type)
     env = {
       Langis::MESSAGE_TYPE_KEY => my_type,
       Langis::MESSAGE_KEY => my_message,

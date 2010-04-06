@@ -60,8 +60,8 @@ module Langis
         @evm.defer(proc do
           # Create the base environment that is understood by the Rackish apps.
           env = {}
-          env[MESSAGE_TYPE_KEY] = message.mtype.to_s if(
-            message.respond_to? :mtype)
+          env[MESSAGE_TYPE_KEY] = message.message_type.to_s if(
+            message.respond_to? :message_type)
           env[MESSAGE_KEY] = message
           env[INTAKE_KEY] = intake_name
           # Actually run the Rackish app, protected by a rescue block.

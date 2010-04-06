@@ -21,6 +21,19 @@ class MyJob
   end 
 end
 
+# A helper class to test transforms
+class Transformable
+  def initialize(message, args)
+    @message = message
+    @args = args
+  end
+
+  def transformer(*args)
+    raise 'Transform Arguments mismatch' unless @args == args
+    return @message
+  end
+end
+
 describe 'Redis' do
   before :all do
     File.unlink(TEST_DATABASE_FILE) if File.exist?(TEST_DATABASE_FILE)
@@ -69,6 +82,59 @@ describe 'Redis' do
       messages.size.should eql 1
       messages[0].should eql my_message
     end
+
+    it 'should add a transformed message to a redis key' do
+      transform_message = "Hello Transformed World"
+      transform_arguments = [1,2,3,4]
+      my_message = Transformable.new(
+        transform_message,
+        transform_arguments)
+      env = {
+        Langis::MESSAGE_KEY => my_message
+      }
+      sink = Langis::Sinks.redis(@redis, REDIS_KEY,
+        :transform => :transformer,
+        :transform_args => transform_arguments)
+      sink.call(env)
+      messages = @redis.lrange REDIS_KEY, 0, -1
+      messages.size.should eql 1
+      messages[0].should eql transform_message
+    end
+
+    it 'should add a transformed message to a redis key, nil args' do
+      transform_message = "Hello Transformed World"
+      transform_arguments = []
+      my_message = Transformable.new(
+        transform_message,
+        transform_arguments)
+      env = {
+        Langis::MESSAGE_KEY => my_message
+      }
+      sink = Langis::Sinks.redis(@redis, REDIS_KEY,
+        :transform => :transformer,
+        :transform_args => nil)
+      sink.call(env)
+      messages = @redis.lrange REDIS_KEY, 0, -1
+      messages.size.should eql 1
+      messages[0].should eql transform_message
+    end
+
+    it 'should add a transformed message to a redis key, without args' do
+      transform_message = "Hello Transformed World"
+      transform_arguments = []
+      my_message = Transformable.new(
+        transform_message,
+        transform_arguments)
+      env = {
+        Langis::MESSAGE_KEY => my_message
+      }
+      sink = Langis::Sinks.redis(@redis, REDIS_KEY,
+        :transform => :transformer)
+      sink.call(env)
+      messages = @redis.lrange REDIS_KEY, 0, -1
+      messages.size.should eql 1
+      messages[0].should eql transform_message
+    end
   end
 
   describe 'Resque Sink' do
@@ -108,6 +174,74 @@ describe 'Redis' do
       job_hash['args'].should be_a_kind_of Array
       job_hash['args'].size.should eql 1
       job_hash['args'][0].should eql my_message
+    end
+
+    it 'should add the transformed message to a resque queue' do
+      transform_message = "Hello Transformed World"
+      transform_arguments = [1,2,3,4]
+      my_message = Transformable.new(
+        transform_message,
+        transform_arguments)
+      env = {
+        Langis::MESSAGE_KEY => my_message
+      }
+      sink = Langis::Sinks.resque(MyJob,
+        :transform => :transformer,
+        :transform_args => transform_arguments)
+      sink.call(env)
+      messages = @redis.lrange RESQUE_REDIS_KEY, 0, -1
+      messages.size.should eql 1
+      job_hash = JSON.parse messages[0]
+      job_hash.should be_a_kind_of Hash
+      job_hash['class'].should eql MyJob.to_s
+      job_hash['args'].should be_a_kind_of Array
+      job_hash['args'].size.should eql 1
+      job_hash['args'][0].should eql transform_message
+    end
+
+    it 'should add the transformed message to a resque queue, nil args' do
+      transform_message = "Hello Transformed World"
+      transform_arguments = []
+      my_message = Transformable.new(
+        transform_message,
+        transform_arguments)
+      env = {
+        Langis::MESSAGE_KEY => my_message
+      }
+      sink = Langis::Sinks.resque(MyJob,
+        :transform => :transformer,
+        :transform_args => nil)
+      sink.call(env)
+      messages = @redis.lrange RESQUE_REDIS_KEY, 0, -1
+      messages.size.should eql 1
+      job_hash = JSON.parse messages[0]
+      job_hash.should be_a_kind_of Hash
+      job_hash['class'].should eql MyJob.to_s
+      job_hash['args'].should be_a_kind_of Array
+      job_hash['args'].size.should eql 1
+      job_hash['args'][0].should eql transform_message
+    end
+
+    it 'should add the transformed message to a resque queue, without args' do
+      transform_message = "Hello Transformed World"
+      transform_arguments = []
+      my_message = Transformable.new(
+        transform_message,
+        transform_arguments)
+      env = {
+        Langis::MESSAGE_KEY => my_message
+      }
+      sink = Langis::Sinks.resque(MyJob,
+        :transform => :transformer)
+      sink.call(env)
+      messages = @redis.lrange RESQUE_REDIS_KEY, 0, -1
+      messages.size.should eql 1
+      job_hash = JSON.parse messages[0]
+      job_hash.should be_a_kind_of Hash
+      job_hash['class'].should eql MyJob.to_s
+      job_hash['args'].should be_a_kind_of Array
+      job_hash['args'].size.should eql 1
+      job_hash['args'][0].should eql transform_message
     end
   end
 end

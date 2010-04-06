@@ -15,7 +15,7 @@ module Langis
   ##
   # The key in the Rack-like environment whose value is the message
   # type of the message that is pumped into the Langis engine. This is
-  # sef if the message's respons to the #mtype method.
+  # set if the message's responds to the #message_type method.
   MESSAGE_TYPE_KEY = 'langis.message_type'
 
   ##
@@ -51,15 +51,9 @@ end
 require 'set'
 require 'blockenspiel'
 require 'eventmachine'
-require 'hashie'
-# We also require json for the Langis::Models, but we let the user
-# define which json library to include.
-#require 'json'
-require 'uuid'
 
 # Now we require the library modules itself.
 require 'langis/middleware'
 require 'langis/dsl'
 require 'langis/engine'
-require 'langis/models'
 require 'langis/sinks'

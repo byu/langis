@@ -23,8 +23,6 @@ begin
     # because we include them in the Gemfile bundle. If we included them
     # here, then they are required to be installed in the base rubygems
     # repository instead of the Bundler's installation path.
-    #gem.add_development_dependency 'activerecord'
-    #gem.add_development_dependency 'activesupport'
     gem.add_development_dependency 'cucumber'
     #gem.add_development_dependency 'delayed_job'
     #gem.add_development_dependency 'redis'
@@ -36,9 +34,6 @@ begin
 
     gem.add_dependency 'blockenspiel'
     gem.add_dependency 'eventmachine'
-    gem.add_dependency 'hashie'
-    gem.add_dependency 'json'
-    gem.add_dependency 'uuid'
 
     gem.files = FileList[
       'lib/**/*.rb',
