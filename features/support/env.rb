@@ -1,6 +1,7 @@
 # Load in all dependent libs using Bundler
-require "#{File.dirname(__FILE__)}/../../vendor/bundler_gems/environment"
-Bundler.require_env :features
+require 'bundler'
+Bundler.setup
+Bundler.require :default, :features
 
 $LOAD_PATH.unshift(File.dirname(__FILE__) + '/../../lib')
 require 'langis'
