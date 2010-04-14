@@ -373,10 +373,10 @@ TODO: Needs investigating
 
 Testing
 =======
-This library uses [Bundler](http://github.com/wycats/bundler) instead
+This library uses [Bundler](http://gembundler.com/) instead
 of the base system's rubygems to pull in the requirements for tests.
 
-> gem bundle
+> bundle install
 >
 > rake spec
 >
