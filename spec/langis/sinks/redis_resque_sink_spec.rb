@@ -2,17 +2,8 @@ require File.expand_path(File.dirname(__FILE__) + '/../../spec_helper')
 require 'redis/raketasks'
 
 REDIS_KEY = 'langis_spec:logs'
-TEST_DATABASE_FILE = 'spec_test_redis_db.rdb'
 
-# We subclass the redis-rb runner task so we can start up using a redis
-# conf file of our choosing.
-class MyRedisRunner < RedisRunner
-  def self.redisconfdir
-    File.expand_path(File.dirname(__FILE__) + '/../../redis.conf')
-  end
-end
-
-RESQUE_QUEUE = 'logs'
+RESQUE_QUEUE = 'langis_spec_test_queue'
 RESQUE_REDIS_KEY = 'resque:queue:' + RESQUE_QUEUE 
 class MyJob
   @queue = RESQUE_QUEUE
@@ -35,29 +26,26 @@ class Transformable
 end
 
 describe 'Redis' do
-  before :all do
-    File.unlink(TEST_DATABASE_FILE) if File.exist?(TEST_DATABASE_FILE)
-    result = MyRedisRunner.start_detached
-    raise("Could not start redis-server, aborting") unless result
-    # Might just need to wait just a little bit for it to spin up
-    sleep 1
-    @redis = Redis.new
-    Resque.redis = @redis
-  end
-
-  after :all do
+  before :each do
     begin
-      @redis.quit
-    ensure
-      RedisRunner.stop
+      @redis = Redis.new :db => 15
+      Resque.redis = @redis
+      @redis.flushdb
+    rescue Errno::ECONNREFUSED
+      raise <<-EOS
+
+      Cannot connect to Redis.
+
+      Make sure Redis is running on localhost, port 6379.
+      This testing suite connects to the database 15.
+
+      redis-server spec/redis.conf
+
+      EOS
     end
   end
 
   describe 'normal sink' do
-    after :each do
-      @redis.del REDIS_KEY
-    end
-
     it 'should add the message to a redis key, from the default MESSAGE_KEY' do
       my_message = 'Hello World'
       env = {
@@ -138,9 +126,6 @@ describe 'Redis' do
   end
 
   describe 'Resque Sink' do
-    after :each do
-      @redis.del RESQUE_REDIS_KEY
-    end
     it 'should add the message as a job to a resque queue, from default key' do
       my_message = 'Hello World Resque Job'
       env = {
@@ -160,7 +145,7 @@ describe 'Redis' do
 
     it 'should add the message as a job to a resque queue, from an alt key' do
       my_key = 'mycustomkey'
-      my_message = 'Hello World Resque Job Alternat Key'
+      my_message = 'Hello World Resque Job Alternate Key'
       env = {
         my_key => my_message
       }
