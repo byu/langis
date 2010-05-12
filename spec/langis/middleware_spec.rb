@@ -1,5 +1,16 @@
 require File.expand_path(File.dirname(__FILE__) + '/../spec_helper')
 
+# Helper Rackish App to save the environment from the most recent call.
+class LastEnvApp
+  attr_reader :env
+  def initialize
+    @env = {}
+  end
+  def call(env)
+    @env = env
+  end
+end
+
 describe 'EnvFieldTransform' do
   it 'should call to_json on a default Langis::MESSAGE_KEY header field' do
     to_json_value = 'some random json value'
@@ -77,6 +88,50 @@ describe 'EnvFieldTransform' do
       :to_method => :custom_to_method,
       :key => fieldname)
     @middleware.call(env)
+  end
+end
+
+describe 'Parameterizer' do
+  it 'should form an empty list' do
+    app = LastEnvApp.new
+    middleware = Langis::Middleware::Parameterizer.new app
+    middleware.call {}
+    app.env[Langis::MESSAGE_KEY].should eql []
+  end
+
+  it 'should form a static list' do
+    app = LastEnvApp.new
+    middleware = Langis::Middleware::Parameterizer.new app, '1', '2', '3'
+    middleware.call {}
+    app.env[Langis::MESSAGE_KEY].should eql ['1', '2', '3']
+  end
+
+  it 'should execute callables to form parameters using env values' do
+    app = LastEnvApp.new
+    middleware = Langis::Middleware::Parameterizer.new app,
+      '1',
+      lambda { |env|
+        env['input2']
+      },
+      lambda { |env|
+        env['input3']
+      },
+      '4'
+    middleware.call 'input2' => '2', 'input3' => '3'
+    app.env[Langis::MESSAGE_KEY].should eql ['1', '2', '3', '4']
+  end
+
+  it 'should save to an alternate key' do
+    app = LastEnvApp.new
+    middleware = Langis::Middleware::Parameterizer.new app,
+      '1',
+      lambda { |env|
+        env['input2']
+      },
+      '3',
+      :env_key => 'A'
+    middleware.call 'input2' => '2'
+    app.env['A'].should eql ['1', '2', '3']
   end
 end
 

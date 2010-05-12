@@ -15,7 +15,7 @@ module Langis
 
       ##
       #
-      # @param app The Rackish application for which this instance is acting as
+      # @param app The Rackish Application for which this instance is acting as
       #   middleware.
       # @option options [String] :key (Langis::MESSAGE_KEY) The hash key
       #   of the Rackish environment whose value is the object that we
@@ -39,12 +39,57 @@ module Langis
       # Executes the object transformation, and invokes the rest of the
       # Rackish app chain.
       #
-      # @param [Hash] env The Rackish input environment.
+      # @param [Hash] env The input Rackish Environment.
       # @return [Array<Integer,Hash,#each>] The return of the proxied Rackish
       #   application chain.
       def call(env)
         item = env[@key].send @to_method, *@to_args
         return @app.call env.merge({ @key => item })
+      end
+    end
+
+    ##
+    # Middleware that adds an Array of values to the Rackish Environment
+    # input. This array of values is created by calling callables using the
+    # said Rackish Environment as input, and from static strings.
+    #
+    # The following example creates an Array of size two, and places it
+    # into the Rackish Environment key identified by 'my_key'. The first
+    # item in the Array is the static string, "Hello World". The second value
+    # is whatever was in the Rackish Environment under the key, "name".
+    #
+    #     use Parameterizer,
+    #       'Hello World',
+    #       lambda { |env| env['name'] },
+    #       :env_key => 'my_key'
+    #
+    class Parameterizer
+
+      ##
+      # @param [#call] app The next link in the Rackish Application chain.
+      # @param [String,#call] *args The list of new parameters that the
+      #   Parameterizer middleware creates. String values are used as is,
+      #   and callable objects are executed with the input Rackish Environment
+      #   as the first parameter.
+      # @option options [String] :env_key (::Langis::MESSAGE_KEY)
+      def initialize(app, *args)
+        @app = app
+        @options = args.last.kind_of?(Hash) ? args.pop : {}
+        @args = args
+        @env_key = @options[:env_key] || MESSAGE_KEY
+      end
+
+      ##
+      # The main method of the Parameterizer middleware.
+      #
+      # @param [Hash] env The input Rackish Environment.
+      def call(env={})
+        new_args = @args.map do |value|
+          value.respond_to?(:call) ? value.call(env) : value
+        end
+        new_env = {}.update(env)
+        new_env[@env_key] = new_args
+        return @app.call new_env
       end
     end
 

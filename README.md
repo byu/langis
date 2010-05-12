@@ -52,6 +52,24 @@ message (e.g. - to represent Article Created) into Langis instead of directly
 configured to route the "ModelEvent" to listening Rack-based applications
 that will then create the jobs (looser coupling).
 
+A Quick Note on Nomenclature
+----------------------------
+
+Langis is inspired by **Rack**, but does not explicitly implement the Rack
+Specification.
+
+**Rackish** is used to describe things that are based in Rack, but not
+actually Rack Specification conformant.
+
+For example, we use the term *Rackish Application* to talk about an
+actual Rack Application that doesn't actually require a fully conformant
+*Rack Environment* as input. To be more clear, Langis does not provide
+environment variables such as SCRIPT_NAME, rack.version, etc.
+
+However, it is possible to run real Rack Applications from Langis if the
+Rack Environment is set up properly by prepending custom middleware to
+the Rackish Application stack.
+
 Installation and Usage
 ======================
 
@@ -339,6 +357,102 @@ sink and the Resque sink.
     for_sink :log_to_redis do
       run Langis::Sinks.redis REDIS_DB, 'myapp:event_logs'
     end
+
+Usage: Running Rackish Apps in Background Jobs
+-----------------------------------------------
+
+Langis also provides a simple driver class to run Rackish applications as
+DelayedJob or Resque background jobs. What this means is that a developer
+can create a Langis Sink (Rackish Application) and have it run either from
+the thread pool in the main process (Rails) or in background worker processes.
+This assumes that the env (including the pumped message) can be marshalled
+by Yaml or Json (as used by DelayedJob and Resque).
+
+For example, we may want to post data to a webhook.
+
+    # A super simple Rack app that posts data to a uri.
+    class JsonWebhookOutlet
+      def call(env)
+        # Make HTTP POST to uri with json data here.
+        uri = env['uri']
+        data = env['data']
+
+        # Then return the success response.
+        [200, {}, 'OK']
+      end
+    end
+
+Based on when new articles are created.
+
+    # In the Article observer
+    def after_create(article)
+      LangisEngine.pump article, :article_created
+    end
+
+We use Langis to handle the observed events.
+
+    # In the Langis Dsl, the following intake is defined
+    intake :article_created do
+      flow_to :webhook_article
+    end
+
+The following is a sink that will post to the webhook in the background
+thread of the same process.
+
+    # This Langis Dsl sink definition executes the JsonWebhookOutlet
+    # Rackish application using the thread pool in the main Rails process.
+    # The uri and json data are obtained using Langis middleware transforms;
+    # it assumes that the actual Article instance has the following to_methods.
+    for_sink :webhook_article do
+      use EnvFieldTransform, :to_method => :to_json, :key => 'data'
+      use EnvFieldTransform, :to_method => :get_owner_webhook, :key => 'uri'
+      run JsonWebhookOutlet.new
+    end
+
+But we really would like to use the background jobs such as the following.
+This is the alternative Langis sink definition that queues up the
+work as a background job. It has the same to_method transforms as above.
+But this sink definition also uses the Parameterizer to create the
+proper arguments so the RackishJob job will run the json webhook
+Rackish Application. The Parameterizer is defined to do the following:
+
+1. Create an Array of 2 items.
+    a. The first item is a fixed string: 'post_to_webhook'.
+    b. The second item is a new hash containing the uri and data elements
+      from the prior EnvFieldTransforms.
+2. Save the new Array to the the input enviromentment under the key
+  named 'save.to.this.key'.
+
+The delayed job sink finally queues up the Rackish job with the
+arguments listed in 'save.to.this.key'.
+
+    for_sink :webhook_article do
+      use EnvFieldTransform, :to_method => :to_json, :key => 'data'
+      use EnvFieldTransform, :to_method => :get_webhook, :key => 'uri'
+      use Langis::Middleware::Parameterizer,
+        'post_to_webhook',
+        lambda { |env|
+          {
+            'uri' => env['uri'],
+            'data' => env['data']
+          }
+        },
+        :env_key => 'save.to.this.key'
+      run Langis::Sinks.delayed_job(
+        Langis::Rackish::RackishJob,
+        :env_key => 'save.to.this.key')
+    end
+
+And in the background process, we need to wire up the 'post_to_webhook'
+name to the actual code.
+
+    # This initializer code is run by the background worker process on startup.
+    # It is not needed in the main Rails process.
+    Langis::Rackish::RackishJob.register_rackish_app(
+      'post_to_webhook',
+      Rack::Builder.app do
+        run JsonWebhookOutlet.new
+      end)
 
 Running EventMachine in Webservers
 ==================================
