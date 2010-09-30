@@ -5,11 +5,11 @@
 
 Gem::Specification.new do |s|
   s.name = %q{langis}
-  s.version = "0.0.0"
+  s.version = "0.1.0"
 
   s.required_rubygems_version = Gem::Requirement.new(">= 0") if s.respond_to? :required_rubygems_version=
   s.authors = ["Benjamin Yu"]
-  s.date = %q{2009-12-22}
+  s.date = %q{2010-09-29}
   s.description = %q{
       Langis is a Rack inspired publish-subscribe system for Ruby.
       It has flexible message routing and message handling using a custom
@@ -21,74 +21,72 @@ Gem::Specification.new do |s|
   s.email = %q{benjaminlyu@gmail.com}
   s.extra_rdoc_files = [
     "LICENSE",
-     "README.markdown"
+    "README.md"
   ]
   s.files = [
     "Gemfile",
-     "LICENSE",
-     "NOTICE",
-     "README.markdown",
-     "Rakefile",
-     "VERSION",
-     "features/langis.feature",
-     "features/step_definitions/langis_steps.rb",
-     "features/support/env.rb",
-     "generators/langis_config_generator.rb",
-     "generators/templates/langis_config.rb",
-     "lib/langis.rb",
-     "lib/langis/dsl.rb",
-     "lib/langis/engine.rb",
-     "lib/langis/middleware.rb",
-     "lib/langis/models.rb",
-     "lib/langis/sinks.rb",
-     "spec/langis/dsl_spec.rb",
-     "spec/langis/engine_spec.rb",
-     "spec/langis/middleware_spec.rb",
-     "spec/langis/model_spec.rb",
-     "spec/langis/sinks/delayed_job_sink_spec.rb",
-     "spec/langis/sinks/redis_resque_sink_spec.rb",
-     "spec/redis.conf",
-     "spec/spec.opts",
-     "spec/spec_helper.rb"
+    "LICENSE",
+    "NOTICE",
+    "README.md",
+    "Rakefile",
+    "VERSION",
+    "generators/langis_config_generator.rb",
+    "generators/templates/langis_config.rb",
+    "lib/langis.rb",
+    "lib/langis/dsl.rb",
+    "lib/langis/engine.rb",
+    "lib/langis/middleware.rb",
+    "lib/langis/rackish.rb",
+    "lib/langis/sinks.rb",
+    "spec/langis/dsl_spec.rb",
+    "spec/langis/engine_spec.rb",
+    "spec/langis/middleware_spec.rb",
+    "spec/langis/rackish_spec.rb",
+    "spec/langis/sinks/delayed_job_sink_spec.rb",
+    "spec/langis/sinks/redis_resque_sink_spec.rb",
+    "spec/redis.conf",
+    "spec/spec_helper.rb"
   ]
   s.homepage = %q{http://github.com/byu/langis}
-  s.rdoc_options = ["--charset=UTF-8"]
   s.require_paths = ["lib"]
-  s.rubygems_version = %q{1.3.5}
+  s.rubygems_version = %q{1.3.7}
   s.summary = %q{Langis is a Rack inspired publish-subscribe system for Ruby.}
+  s.test_files = [
+    "spec/langis/dsl_spec.rb",
+    "spec/langis/engine_spec.rb",
+    "spec/langis/middleware_spec.rb",
+    "spec/langis/rackish_spec.rb",
+    "spec/langis/sinks/delayed_job_sink_spec.rb",
+    "spec/langis/sinks/redis_resque_sink_spec.rb",
+    "spec/spec_helper.rb"
+  ]
 
   if s.respond_to? :specification_version then
     current_version = Gem::Specification::CURRENT_SPECIFICATION_VERSION
     s.specification_version = 3
 
-    if Gem::Version.new(Gem::RubyGemsVersion) >= Gem::Version.new('1.2.0') then
-      s.add_development_dependency(%q<cucumber>, [">= 0"])
+    if Gem::Version.new(Gem::VERSION) >= Gem::Version.new('1.2.0') then
+      s.add_runtime_dependency(%q<blockenspiel>, [">= 0"])
+      s.add_runtime_dependency(%q<eventmachine>, [">= 0"])
       s.add_development_dependency(%q<rspec>, [">= 1.2.9"])
       s.add_development_dependency(%q<yard>, [">= 0"])
       s.add_runtime_dependency(%q<blockenspiel>, [">= 0"])
       s.add_runtime_dependency(%q<eventmachine>, [">= 0"])
-      s.add_runtime_dependency(%q<hashie>, [">= 0"])
-      s.add_runtime_dependency(%q<json>, [">= 0"])
-      s.add_runtime_dependency(%q<uuid>, [">= 0"])
     else
-      s.add_dependency(%q<cucumber>, [">= 0"])
+      s.add_dependency(%q<blockenspiel>, [">= 0"])
+      s.add_dependency(%q<eventmachine>, [">= 0"])
       s.add_dependency(%q<rspec>, [">= 1.2.9"])
       s.add_dependency(%q<yard>, [">= 0"])
       s.add_dependency(%q<blockenspiel>, [">= 0"])
       s.add_dependency(%q<eventmachine>, [">= 0"])
-      s.add_dependency(%q<hashie>, [">= 0"])
-      s.add_dependency(%q<json>, [">= 0"])
-      s.add_dependency(%q<uuid>, [">= 0"])
     end
   else
-    s.add_dependency(%q<cucumber>, [">= 0"])
+    s.add_dependency(%q<blockenspiel>, [">= 0"])
+    s.add_dependency(%q<eventmachine>, [">= 0"])
     s.add_dependency(%q<rspec>, [">= 1.2.9"])
     s.add_dependency(%q<yard>, [">= 0"])
     s.add_dependency(%q<blockenspiel>, [">= 0"])
     s.add_dependency(%q<eventmachine>, [">= 0"])
-    s.add_dependency(%q<hashie>, [">= 0"])
-    s.add_dependency(%q<json>, [">= 0"])
-    s.add_dependency(%q<uuid>, [">= 0"])
   end
 end
 
